@@ -45,7 +45,7 @@ define('HTML_PARAMS','dir="LTR" lang="en"');
 define('CHARSET', 'iso-8859-1');
 
 // page title
-define('TITLE', 'osCommerce');
+define('TITLE', STORE_NAME);
 
 // header text in includes/header.php
 define('HEADER_TITLE_CREATE_ACCOUNT', 'Create an Account');
@@ -314,21 +314,5 @@ define('TEXT_CCVAL_ERROR_INVALID_DATE', 'The expiry date entered for the credit 
 define('TEXT_CCVAL_ERROR_INVALID_NUMBER', 'The credit card number entered is invalid.<br>Please check the number and try again.');
 define('TEXT_CCVAL_ERROR_UNKNOWN_CARD', 'The first four digits of the number entered are: %s<br>If that number is correct, we do not accept that type of credit card.<br>If it is wrong, please try again.');
 
-/*
-  The following copyright announcement can only be
-  appropriately modified or removed if the layout of
-  the site theme has been modified to distinguish
-  itself from the default osCommerce-copyrighted
-  theme.
-
-  For more information please read the following
-  Frequently Asked Questions entry on the osCommerce
-  support site:
-
-  http://www.oscommerce.com/community.php/faq,26/q,50
-
-  Please leave this comment intact together with the
-  following copyright announcement.
-*/
-define('FOOTER_TEXT_BODY', 'Copyright &copy; 2003 <a href="http://www.oscommerce.com" target="_blank">osCommerce</a><br>Powered by <a href="http://www.oscommerce.com" target="_blank">osCommerce</a>');
+define('FOOTER_TEXT_BODY', 'Copyright &copy; ' . date('Y') . ' <a href="' . tep_href_link(FILENAME_DEFAULT) . '">' . STORE_NAME . '</a><br>Powered by <a href="http://www.oscommerce.com" target="_blank">osCommerce</a>');
 ?>

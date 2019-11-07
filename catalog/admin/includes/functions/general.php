@@ -15,6 +15,10 @@
   function tep_redirect($url) {
     global $logger;
 
+    if ( (strstr($url, "\n") != false) || (strstr($url, "\r") != false) ) {
+      tep_redirect(tep_href_link(FILENAME_DEFAULT, '', 'NONSSL', false));
+    }
+
     header('Location: ' . $url);
 
     if (STORE_PAGE_PARSE_TIME == 'true') {

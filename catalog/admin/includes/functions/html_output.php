@@ -63,20 +63,19 @@
 
 ////
 // The HTML image wrapper function
-  function tep_image($src, $alt = '', $width = '', $height = '', $params = '') {
-    $image = '<img src="' . $src . '" border="0" alt="' . $alt . '"';
-    if ($alt) {
-      $image .= ' title=" ' . $alt . ' "';
+  function tep_image($src, $alt = '', $width = '', $height = '', $parameters = '') {
+    $image = '<img src="' . tep_output_string($src) . '" border="0" alt="' . tep_output_string($alt) . '"';
+
+    if (tep_not_null($alt)) {
+      $image .= ' title=" ' . tep_output_string($alt) . ' "';
     }
-    if ($width) {
-      $image .= ' width="' . $width . '"';
+
+    if (tep_not_null($width) && tep_not_null($height)) {
+      $image .= ' width="' . tep_output_string($width) . '" height="' . tep_output_string($height) . '"';
     }
-    if ($height) {
-      $image .= ' height="' . $height . '"';
-    }
-    if ($params) {
-      $image .= ' ' . $params;
-    }
+
+    if (tep_not_null($parameters)) $image .= ' ' . $parameters;
+
     $image .= '>';
 
     return $image;
@@ -242,9 +241,9 @@
     $field .= '>';
 
     if ( (isset($GLOBALS[$name])) && ($reinsert_value == true) ) {
-      $field .= stripslashes($GLOBALS[$name]);
+      $field .= tep_output_string_protected(stripslashes($GLOBALS[$name]));
     } elseif (tep_not_null($text)) {
-      $field .= $text;
+      $field .= tep_output_string_protected($text);
     }
 
     $field .= '</textarea>';

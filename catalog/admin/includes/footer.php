@@ -21,17 +21,16 @@
   thus can not be removed, or can only be modified
   appropriately.
 
-  For more information please read the following
-  Frequently Asked Questions entry on the osCommerce
-  support site:
+  For more information please read the osCommerce
+  Copyright Policy at:
 
-  http://www.oscommerce.com/community.php/faq,26/q,50
+  http://www.oscommerce.com/about/copyright
 
   Please leave this comment intact together with the
   following copyright announcement.
 */
 ?>
-E-Commerce Engine Copyright &copy; 2003 <a href="http://www.oscommerce.com" target="_blank">osCommerce</a><br>
+E-Commerce Engine Copyright &copy; 2005 <a href="http://www.oscommerce.com" target="_blank">osCommerce</a><br>
 osCommerce provides no warranty and is redistributable under the <a href="http://www.fsf.org/licenses/gpl.txt" target="_blank">GNU General Public License</a>
     </td>
   </tr>

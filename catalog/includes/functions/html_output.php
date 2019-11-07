@@ -63,7 +63,7 @@
     }
 
     if (isset($_sid)) {
-      $link .= $separator . $_sid;
+      $link .= $separator . tep_output_string($_sid);
     }
 
     return $link;
@@ -219,9 +219,9 @@
     $field .= '>';
 
     if ( (isset($GLOBALS[$name])) && ($reinsert_value == true) ) {
-      $field .= stripslashes($GLOBALS[$name]);
+      $field .= tep_output_string_protected(stripslashes($GLOBALS[$name]));
     } elseif (tep_not_null($text)) {
-      $field .= $text;
+      $field .= tep_output_string_protected($text);
     }
 
     $field .= '</textarea>';

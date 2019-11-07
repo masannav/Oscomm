@@ -35,7 +35,7 @@
         $current_page_number = $num_pages;
       }
       $offset = ($max_rows_per_page * ($current_page_number - 1));
-      $sql_query .= " limit " . $offset . ", " . $max_rows_per_page;
+      $sql_query .= " limit " . max($offset, 0) . ", " . $max_rows_per_page;
     }
 
     function display_links($query_numrows, $max_rows_per_page, $max_page_links, $current_page_number, $parameters = '', $page_name = 'page') {

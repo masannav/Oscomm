@@ -20,6 +20,10 @@
 ////
 // Redirect to another page or site
   function tep_redirect($url) {
+    if ( (strstr($url, "\n") != false) || (strstr($url, "\r") != false) ) { 
+      tep_redirect(tep_href_link(FILENAME_DEFAULT, '', 'NONSSL', false));
+    }
+
     if ( (ENABLE_SSL == true) && (getenv('HTTPS') == 'on') ) { // We are loading an SSL page
       if (substr($url, 0, strlen(HTTP_SERVER)) == HTTP_SERVER) { // NONSSL url
         $url = HTTPS_SERVER . substr($url, strlen(HTTP_SERVER)); // Change it to SSL
@@ -910,10 +914,55 @@
 ////
 // Return a product ID with attributes
   function tep_get_uprid($prid, $params) {
-    $uprid = $prid;
-    if ( (is_array($params)) && (!strstr($prid, '{')) ) {
-      while (list($option, $value) = each($params)) {
-        $uprid = $uprid . '{' . $option . '}' . $value;
+    if (is_numeric($prid)) {
+      $uprid = $prid;
+
+      if (is_array($params) && (sizeof($params) > 0)) {
+        $attributes_check = true;
+        $attributes_ids = '';
+
+        reset($params);
+        while (list($option, $value) = each($params)) {
+          if (is_numeric($option) && is_numeric($value)) {
+            $attributes_ids .= '{' . (int)$option . '}' . (int)$value;
+          } else {
+            $attributes_check = false;
+            break;
+          }
+        }
+
+        if ($attributes_check == true) {
+          $uprid .= $attributes_ids;
+        }
+      }
+    } else {
+      $uprid = tep_get_prid($prid);
+
+      if (is_numeric($uprid)) {
+        if (strpos($prid, '{') !== false) {
+          $attributes_check = true;
+          $attributes_ids = '';
+
+// strpos()+1 to remove up to and including the first { which would create an empty array element in explode()
+          $attributes = explode('{', substr($prid, strpos($prid, '{')+1));
+
+          for ($i=0, $n=sizeof($attributes); $i<$n; $i++) {
+            $pair = explode('}', $attributes[$i]);
+
+            if (is_numeric($pair[0]) && is_numeric($pair[1])) {
+              $attributes_ids .= '{' . (int)$pair[0] . '}' . (int)$pair[1];
+            } else {
+              $attributes_check = false;
+              break;
+            }
+          }
+
+          if ($attributes_check == true) {
+            $uprid .= $attributes_ids;
+          }
+        }
+      } else {
+        return false;
       }
     }
 
@@ -925,7 +974,11 @@
   function tep_get_prid($uprid) {
     $pieces = explode('{', $uprid);
 
-    return $pieces[0];
+    if (is_numeric($pieces[0])) {
+      return $pieces[0];
+    } else {
+      return false;
+    }
   }
 
 ////

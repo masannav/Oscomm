@@ -19,7 +19,7 @@
 // check if register_globals is enabled.
 // since this is a temporary measure this message is hardcoded. The requirement will be removed before 2.2 is finalized.
   if (function_exists('ini_get')) {
-    ini_get('register_globals') or exit('FATAL ERROR: register_globals is disabled in php.ini, please enable it!');
+    ini_get('register_globals') or exit('Server Requirement Error: register_globals is disabled in your PHP configuration. This can be enabled in your php.ini configuration file or in the .htaccess file in your catalog directory.');
   }
 
 // Set the local configuration parameters - mainly for developers

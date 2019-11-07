@@ -27,9 +27,6 @@
         if ( ($this->parse() == true) && ($this->save() == true) ) {
           return true;
         } else {
-// self destruct
-          $this = null;
-
           return false;
         }
       }

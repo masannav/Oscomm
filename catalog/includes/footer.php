@@ -21,28 +21,7 @@
 <br>
 <table border="0" width="100%" cellspacing="0" cellpadding="0">
   <tr>
-    <td align="center" class="smallText">
-<?php
-/*
-  The following copyright announcement can only be
-  appropriately modified or removed if the layout of
-  the site theme has been modified to distinguish
-  itself from the default osCommerce-copyrighted
-  theme.
-
-  For more information please read the following
-  Frequently Asked Questions entry on the osCommerce
-  support site:
-
-  http://www.oscommerce.com/community.php/faq,26/q,50
-
-  Please leave this comment intact together with the
-  following copyright announcement.
-*/
-
-  echo FOOTER_TEXT_BODY
-?>
-    </td>
+    <td align="center" class="smallText"><?php echo FOOTER_TEXT_BODY; ?></td>
   </tr>
 </table>
 <?php

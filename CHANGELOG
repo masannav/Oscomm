@@ -1,7 +1,42 @@
 $Id: CHANGELOG,v 1.23 2003/07/12 09:38:07 hpdl Exp $
 
 osCommerce Changelog
-Copyright (c) 2003 osCommerce
+Copyright (c) 2005 osCommerce
+
+------------------------------------------------------------------------------
+11/13/2005 osCommerce 2.2 Milestone 2 Update 051113
+------------------------------------------------------------------------------
+
+ * Fixed bug 1662; update of customers address through the My Account page
+   resulted in the country value not being stored properly and affected tax
+   rate values.
+ 
+------------------------------------------------------------------------------
+11/12/2005 osCommerce 2.2 Milestone 2 Update 051112
+------------------------------------------------------------------------------
+
+Please review the update-20051112.html file for the important changes made.
+
+ * Index language definition: updated the Wiki link to point to the Knowledge
+   Base site
+
+ * Reviews Box: Renamed the following variables due to naming conflicts:
+
+   $review_query -> $rand_review_query
+   $review       -> $rand_review
+   $review       -> $rand_review_text
+
+ * Wrapped all input parameters with tep_output_string() in the tep_image()
+   function on the administration tool
+   (admin/includes/functions/html_output.php)
+
+ * UPS shipping module removed due to it violating the UPS terms of service.
+   An alternative module can be found here:
+   http://www.oscommerce.com/community/contributions,1323
+
+ * Updated codebase for PHP 5.0 compatibility
+
+ * Updated database structure for MySQL 5.0 compatibility
 
 ------------------------------------------------------------------------------
 12/07/2003 osCommerce 2.2 Milestone 2
