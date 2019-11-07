@@ -1,11 +1,11 @@
 <?php
 /*
-  $Id: sessions.php,v 1.13 2002/11/19 00:48:27 dgw_ Exp $
+  $Id: sessions.php,v 1.15 2003/06/16 16:24:00 dgw_ Exp $
 
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2002 osCommerce
+  Copyright (c) 2003 osCommerce
 
   Released under the GNU General Public License
 
@@ -30,8 +30,8 @@
 
     var $use_cookies = true;
     var $cookie_lifetime = 0;
-    var $cookie_path = substr(DIR_WS_CATALOG, 0, -1);
-    var $cookie_domain = '';
+    var $cookie_path = PHP_SESSION_PATH;
+    var $cookie_domain = PHP_SESSION_DOMAIN;
 
     var $gc_probability = 1;
     var $gc_maxlifetime = 0;
@@ -45,8 +45,11 @@
     var $delimiter = "\n";
     var $delimiter_value = '[==]';
 
+    var $vars;
+
     function php3session() {
       $this->mod_name = $this->save_handler;
+      $this->vars = array();
     }
   }
 

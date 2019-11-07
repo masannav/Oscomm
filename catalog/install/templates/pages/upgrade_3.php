@@ -1,6 +1,6 @@
 <?php
 /*
-  $Id: upgrade_3.php,v 1.48.2.1 2003/02/17 21:36:38 thomasamoulton Exp $
+  $Id: upgrade_3.php,v 1.62 2003/07/12 09:00:26 hpdl Exp $
 
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
@@ -10,11 +10,8 @@
   Released under the GNU General Public License
 */
 ?>
-<p><span class="pageHeading">osCommerce</span><br><font color="#9a9a9a">Open Source E-Commerce Solutions</font></p>
 
 <p class="pageTitle">Upgrade</p>
-
-<p><b>Step 1: Database Upgrade</b></p>
 
 <?php
   $db = array();
@@ -101,34 +98,27 @@ changeText('statusText', 'Updating Address Book');
 <?php
   flush();
 
-  osc_db_query("alter table address_book change address_book_id address_book_id int(5) not null default '1'");
-  osc_db_query("alter table address_book add customers_id int(5) not null default '0' first");
+  osc_db_query("alter table address_book add customers_id int not null after address_book_id");
   osc_db_query("alter table address_book add entry_company varchar(32) after entry_gender");
-  osc_db_query("alter table address_book drop primary key");
+
+  osc_db_query("alter table customers add customers_default_address_id int(5) not null after customers_email_address");
+
+  $entries_query = osc_db_query("select address_book_id, customers_id from address_book_to_customers");
+  while ($entries = osc_db_fetch_array($entries_query)) {
+    osc_db_query("update address_book set customers_id = '" . $entries['customers_id'] . "' where address_book_id = '" . $entries['address_book_id'] . "'");
+  }
 
   $customer_query = osc_db_query("select customers_id, customers_gender, customers_firstname, customers_lastname, customers_street_address, customers_suburb, customers_postcode, customers_city, customers_state, customers_country_id, customers_zone_id from customers");
   while ($customer = osc_db_fetch_array($customer_query)) {
-    osc_db_query("insert into address_book (customers_id, address_book_id, entry_gender, entry_company, entry_firstname, entry_lastname, entry_street_address, entry_suburb, entry_postcode, entry_city, entry_state, entry_country_id, entry_zone_id) values ('" . $customer['customers_id'] . "', '1', '" . $customer['customers_gender'] . "', '', '" . addslashes($customer['customers_firstname']) . "', '" . addslashes($customer['customers_lastname']) . "', '" . addslashes($customer['customers_street_address']) . "', '" . addslashes($customer['customers_suburb']) . "', '" . addslashes($customer['customers_postcode']) . "', '" . addslashes($customer['customers_city']) . "', '" . addslashes($customer['customers_state']) . "', '" . $customer['customers_country_id'] . "', '" . $customer['customers_zone_id'] . "')");
+    osc_db_query("insert into address_book (customers_id, entry_gender, entry_company, entry_firstname, entry_lastname, entry_street_address, entry_suburb, entry_postcode, entry_city, entry_state, entry_country_id, entry_zone_id) values ('" . $customer['customers_id'] . "', '" . $customer['customers_gender'] . "', '', '" . addslashes($customer['customers_firstname']) . "', '" . addslashes($customer['customers_lastname']) . "', '" . addslashes($customer['customers_street_address']) . "', '" . addslashes($customer['customers_suburb']) . "', '" . addslashes($customer['customers_postcode']) . "', '" . addslashes($customer['customers_city']) . "', '" . addslashes($customer['customers_state']) . "', '" . $customer['customers_country_id'] . "', '" . $customer['customers_zone_id'] . "')");
+
+    $address_book_id = osc_db_insert_id();
+
+    osc_db_query("update customers set customers_default_address_id = '" . $address_book_id . "' where customers_id = '" . $customer['customers_id'] . "'");
   }
 
-  $entries_query = osc_db_query("select address_book_id, customers_id from address_book_to_customers order by customers_id, address_book_id DESC");
-  $ab_id = '1'; // set new address_book_id
-  $c_id = '-1'; // when customer_id does not equal $c_id, reset $ab_id
-  while ($entries = osc_db_fetch_array($entries_query)) {
-    if ($entries['customers_id'] != $c_id) {
-      $ab_id = '1';
-      $c_id = $entries['customers_id'];
-    }
-    $ab_id++;
+  osc_db_query("alter table address_book add index idx_address_book_customers_id (customers_id)");
 
-    $ab_query = osc_db_query("select entry_gender, entry_firstname, entry_lastname, entry_street_address, entry_suburb, entry_postcode, entry_city, entry_state, entry_country_id, entry_zone_id from address_book where address_book_id = '" . $entries['address_book_id'] . "'");
-    $ab = osc_db_fetch_array($ab_query);
-
-    osc_db_query("delete from address_book where address_book_id = '" . $entries['address_book_id'] . "' and customers_id = ''");
-    osc_db_query("insert into address_book (customers_id, address_book_id, entry_gender, entry_company, entry_firstname, entry_lastname, entry_street_address, entry_suburb, entry_postcode, entry_city, entry_state, entry_country_id, entry_zone_id) values ('" . $c_id . "', '" . $ab_id . "', '" . $ab['entry_gender'] . "', '', '" . addslashes($ab['entry_firstname']) . "', '" . addslashes($ab['entry_lastname']) . "', '" . addslashes($ab['entry_street_address']) . "', '" . addslashes($ab['entry_suburb']) . "', '" . addslashes($ab['entry_postcode']) . "', '" . addslashes($ab['entry_city']) . "', '" . addslashes($ab['entry_state']) . "', '" . $ab['entry_country_id'] . "', '" . $ab['entry_zone_id'] . "')");
-  }
-
-  osc_db_query("alter table address_book add primary key (address_book_id, customers_id)");
   osc_db_query("drop table address_book_to_customers");
 ?>
 <script language="javascript"><!--
@@ -196,9 +186,12 @@ changeText('statusText', 'Updating Configuration');
   osc_db_query("alter table configuration modify use_function varchar(255)");
   osc_db_query("alter table configuration add set_function varchar(255) after use_function");
 
-  osc_db_query("update configuration set set_function = 'tep_cfg_pull_down_country_list(' where configuration_key = 'STORE_COUNTRY'");
+  osc_db_query("update configuration set configuration_key = 'SHIPPING_ORIGIN_COUNTRY' where configuration_key = 'STORE_ORIGIN_COUNTRY'");
+  osc_db_query("update configuration set configuration_key = 'SHIPPING_ORIGIN_ZIP' where configuration_key = 'STORE_ORIGIN_ZIP'");
+  osc_db_query("update configuration set set_function = 'tep_cfg_pull_down_country_list(' where configuration_key = 'STORE_COUNTRY' or configuration_key = 'SHIPPING_ORIGIN_COUNTRY'");
   osc_db_query("update configuration set configuration_value = 'desc', configuration_description = 'This is the sort order used in the expected products box.', set_function = 'tep_cfg_select_option(array(\'asc\', \'desc\'), ' where configuration_key = 'EXPECTED_PRODUCTS_SORT'");
   osc_db_query("update configuration set configuration_value = 'date_expected', configuration_description = 'The column to sort by in the expected products box.', set_function = 'tep_cfg_select_option(array(\'products_name\', \'date_expected\'), ' where configuration_key = 'EXPECTED_PRODUCTS_FIELD'");
+  osc_db_query("update configuration set use_function = 'tep_cfg_get_zone_name' where configuration_key = 'STORE_ZONE'");
 
   $config_query = osc_db_query("select configuration_key, configuration_value from configuration where configuration_key = 'IMAGE_REQUIRED'");
   $config_value = osc_db_fetch_array($config_query);
@@ -212,7 +205,7 @@ changeText('statusText', 'Updating Configuration');
   else $config_flag = 'false';
   osc_db_query("update configuration set configuration_value = '" . $config_flag . "', set_function = 'tep_cfg_select_option(array(\'true\', \'false\'),' where configuration_key = 'CONFIG_CALCULATE_IMAGE_SIZE'");
 
-  osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, use_function, set_function, date_added) values ('Zone', 'STORE_ZONE', '88', 'The zone my store is located in', '1', '7', 'tep_get_zone_name', 'tep_cfg_pull_down_zone_list(', now())");
+  osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, use_function, set_function, date_added) values ('Zone', 'STORE_ZONE', '18', 'The zone my store is located in', '1', '7', 'tep_cfg_get_zone_name', 'tep_cfg_pull_down_zone_list(', now())");
   osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Switch To Default Currency', 'USE_DEFAULT_LANGUAGE_CURRENCY', 'false', 'Automatically switch to the language\'s currency when it is changed', '1', '10', 'tep_cfg_select_option(array(\'true\', \'false\'), ', now())");
   osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Send Extra Order E-Mails To', 'SEND_EXTRA_ORDER_EMAILS_TO', '', 'Send extra order e-mails to the following e-mail addresses, in this format: Name 1 &lt;email@address1&gt;, Name 2 &lt;email@address2&gt;', '1', '11', now())");
   osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Use Search-Engine Safe URLs', 'SEARCH_ENGINE_FRIENDLY_URLS', 'false', 'Use search-engine safe urls for all site links', '1', '12', 'tep_cfg_select_option(array(\'true\', \'false\'), ', now())");
@@ -237,11 +230,11 @@ changeText('statusText', 'Updating Configuration');
 
   osc_db_query("delete from configuration where configuration_group_id = '5'");
 
-  osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Gender', 'ACCOUNT_GENDER', 'true', 'Display gender in the custommers account', '5', '1', 'tep_cfg_select_option(array(\'true\', \'false\'), ', now())");
-  osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Date of Birth', 'ACCOUNT_DOB', 'true', 'Display date of birth in the custommers account', '5', '2', 'tep_cfg_select_option(array(\'true\', \'false\'), ', now())");
-  osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Company', 'ACCOUNT_COMPANY', 'true', 'Display company in the custommers account', '5', '3', 'tep_cfg_select_option(array(\'true\', \'false\'), ', now())");
-  osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Suburb', 'ACCOUNT_SUBURB', 'true', 'Display suburb in the custommers account', '5', '4', 'tep_cfg_select_option(array(\'true\', \'false\'), ', now())");
-  osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('State', 'ACCOUNT_STATE', 'true', 'Display state in the custommers account', '5', '5', 'tep_cfg_select_option(array(\'true\', \'false\'), ', now())");
+  osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Gender', 'ACCOUNT_GENDER', 'true', 'Display gender in the customers account', '5', '1', 'tep_cfg_select_option(array(\'true\', \'false\'), ', now())");
+  osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Date of Birth', 'ACCOUNT_DOB', 'true', 'Display date of birth in the customers account', '5', '2', 'tep_cfg_select_option(array(\'true\', \'false\'), ', now())");
+  osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Company', 'ACCOUNT_COMPANY', 'true', 'Display company in the customers account', '5', '3', 'tep_cfg_select_option(array(\'true\', \'false\'), ', now())");
+  osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Suburb', 'ACCOUNT_SUBURB', 'true', 'Display suburb in the customers account', '5', '4', 'tep_cfg_select_option(array(\'true\', \'false\'), ', now())");
+  osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('State', 'ACCOUNT_STATE', 'true', 'Display state in the customers account', '5', '5', 'tep_cfg_select_option(array(\'true\', \'false\'), ', now())");
 
   osc_db_query("delete from configuration where configuration_group_id = '6'");
 
@@ -272,10 +265,10 @@ changeText('statusText', 'Updating Configuration');
   osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Display Total', 'MODULE_ORDER_TOTAL_TOTAL_STATUS', 'true', 'Do you want to display the total order value?', '6', '1','tep_cfg_select_option(array(\'true\', \'false\'), ', now())");
   osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Sort Order', 'MODULE_ORDER_TOTAL_TOTAL_SORT_ORDER', '4', 'Sort order of display.', '6', '2', now())");
 
-  osc_db_query("delete from configuration where configuration_group_id = '7' and configuration_key != 'SHIPPING_BOX_WEIGHT' and configuration_key != 'SHIPPING_BOX_PADDING' and configuration_key != 'SHIPPING_MAX_WEIGHT' and configuration_key != 'STORE_ORIGIN_ZIP' and configuration_key != 'STORE_ORIGIN_COUNTRY'");
+  osc_db_query("delete from configuration where configuration_group_id = '7' and configuration_key != 'SHIPPING_BOX_WEIGHT' and configuration_key != 'SHIPPING_BOX_PADDING' and configuration_key != 'SHIPPING_MAX_WEIGHT' and configuration_key != 'SHIPPING_ORIGIN_ZIP' and configuration_key != 'SHIPPING_ORIGIN_COUNTRY'");
   osc_db_query("update configuration set sort_order = '5' where sort_order = '2'");
-  osc_db_query("update configuration set configuration_group_id = '7', sort_order = '1' where configuration_key = 'STORE_ORIGIN_ZIP'");
-  osc_db_query("update configuration set configuration_group_id = '7', sort_order = '2' where configuration_key = 'STORE_ORIGIN_COUNTRY'");
+  osc_db_query("update configuration set configuration_group_id = '7', sort_order = '1' where configuration_key = 'SHIPPING_ORIGIN_ZIP'");
+  osc_db_query("update configuration set configuration_group_id = '7', sort_order = '2' where configuration_key = 'SHIPPING_ORIGIN_COUNTRY'");
 
   osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Check stock level', 'STOCK_CHECK', 'false', 'Check to see if sufficent stock is available', '9', '1', 'tep_cfg_select_option(array(\'true\', \'false\'), ', now())");
   osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Subtract stock', 'STOCK_LIMITED', 'true', 'Subtract product in stock by product orders', '9', '2', 'tep_cfg_select_option(array(\'true\', \'false\'), ', now())");
@@ -306,6 +299,14 @@ changeText('statusText', 'Updating Configuration');
   osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Enable GZip Compression', 'GZIP_COMPRESSION', 'false', 'Enable HTTP GZip compression.', '14', '1', 'tep_cfg_select_option(array(\'true\', \'false\'), ', now())");
   osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Compression Level', 'GZIP_LEVEL', '5', 'Use this compression level 0-9 (0 = minimum, 9 = maximum).', '14', '2', now())");
 
+  osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Session Directory', 'SESSION_WRITE_DIRECTORY', '/tmp', 'If sessions are file based, store them in this directory.', '15', '1', now())");
+  osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Force Cookie Use', 'SESSION_FORCE_COOKIE_USE', 'False', 'Force the use of sessions when cookies are only enabled.', '15', '2', 'tep_cfg_select_option(array(\'True\', \'False\'), ', now())");
+  osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Check SSL Session ID', 'SESSION_CHECK_SSL_SESSION_ID', 'False', 'Validate the SSL_SESSION_ID on every secure HTTPS page request.', '15', '3', 'tep_cfg_select_option(array(\'True\', \'False\'), ', now())");
+  osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Check User Agent', 'SESSION_CHECK_USER_AGENT', 'False', 'Validate the clients browser user agent on every page request.', '15', '4', 'tep_cfg_select_option(array(\'True\', \'False\'), ', now())");
+  osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Check IP Address', 'SESSION_CHECK_IP_ADDRESS', 'False', 'Validate the clients IP address on every page request.', '15', '5', 'tep_cfg_select_option(array(\'True\', \'False\'), ', now())");
+  osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Prevent Spider Sessions', 'SESSION_BLOCK_SPIDERS', 'False', 'Prevent known spiders from starting a session.', '15', '6', 'tep_cfg_select_option(array(\'True\', \'False\'), ', now())");
+  osc_db_query("insert into configuration (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Recreate Session', 'SESSION_RECREATE', 'False', 'Recreate the session to generate a new session ID when the customer logs on or creates an account (PHP >=4.1 needed).', '15', '7', 'tep_cfg_select_option(array(\'True\', \'False\'), ', now())");
+
   osc_db_query("delete from configuration_group");
 
   osc_db_query("alter table configuration_group add visible int(1) default '1'");
@@ -314,8 +315,8 @@ changeText('statusText', 'Updating Configuration');
   osc_db_query("insert into configuration_group values ('2', 'Minimum Values', 'The minimum values for functions / data', '2', '1')");
   osc_db_query("insert into configuration_group values ('3', 'Maximum Values', 'The maximum values for functions / data', '3', '1')");
   osc_db_query("insert into configuration_group values ('4', 'Images', 'Image parameters', '4', '1')");
-  osc_db_query("insert into configuration_group values ('5', 'Customer Details', 'Customer account configuration', '5', '1')");
   osc_db_query("insert into configuration_group values ('6', 'Module Options', 'Hidden from configuration', '6', '0')");
+  osc_db_query("insert into configuration_group values ('5', 'Customer Details', 'Customer account configuration', '5', '1')");
   osc_db_query("insert into configuration_group values ('7', 'Shipping/Packaging', 'Shipping options available at my store', '7', '1')");
   osc_db_query("insert into configuration_group values ('8', 'Product Listing', 'Product Listing    configuration options', '8', '1')");
   osc_db_query("insert into configuration_group values ('9', 'Stock', 'Stock configuration options', '9', '1')");
@@ -324,6 +325,7 @@ changeText('statusText', 'Updating Configuration');
   osc_db_query("insert into configuration_group values ('12', 'E-Mail Options', 'General setting for E-Mail transport and HTML E-Mails', '12', '1')");
   osc_db_query("insert into configuration_group values ('13', 'Download', 'Downloadable products options', '13', '1')");
   osc_db_query("insert into configuration_group values ('14', 'GZip Compression', 'GZip compression options', '14', '1')");
+  osc_db_query("insert into configuration_group values ('15', 'Sessions', 'Session options', '15', '1')");
 
 ?>
 
@@ -368,7 +370,6 @@ changeText('statusText', 'Updating Customers');
   osc_db_query("alter table customers drop customers_country_id");
   osc_db_query("alter table customers change customers_dob customers_dob datetime not null default '0000-00-00 00:00:00'");
   osc_db_query("alter table customers add customers_newsletter char(1)");
-  osc_db_query("alter table customers add customers_default_address_id int(5) not null default '1' after customers_email_address");
 
   osc_db_query("alter table customers_basket change products_id products_id tinytext not null");
   osc_db_query("alter table customers_basket change customers_basket_date_added customers_basket_date_added varchar(8)");

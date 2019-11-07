@@ -1,6 +1,6 @@
 <?php
 /*
-  $Id: database.php,v 1.18 2003/02/11 01:31:01 hpdl Exp $
+  $Id: database.php,v 1.21 2003/06/09 21:21:59 hpdl Exp $
 
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
@@ -37,13 +37,13 @@
   function tep_db_query($query, $link = 'db_link') {
     global $$link;
 
-    if (STORE_DB_TRANSACTIONS == 'true') {
+    if (defined('STORE_DB_TRANSACTIONS') && (STORE_DB_TRANSACTIONS == 'true')) {
       error_log('QUERY ' . $query . "\n", 3, STORE_PAGE_PARSE_TIME_LOG);
     }
 
     $result = mysql_query($query, $$link) or tep_db_error($query, mysql_errno(), mysql_error());
 
-    if (STORE_DB_TRANSACTIONS == 'true') {
+    if (defined('STORE_DB_TRANSACTIONS') && (STORE_DB_TRANSACTIONS == 'true')) {
        $result_error = mysql_error();
        error_log('RESULT ' . $result . ' ' . $result_error . "\n", 3, STORE_PAGE_PARSE_TIME_LOG);
     }
@@ -120,7 +120,7 @@
   }
 
   function tep_db_output($string) {
-    return stripslashes($string);
+    return htmlspecialchars($string);
   }
 
   function tep_db_input($string) {
@@ -129,7 +129,7 @@
 
   function tep_db_prepare_input($string) {
     if (is_string($string)) {
-      return trim(stripslashes($string));
+      return trim(tep_sanitize_string(stripslashes($string)));
     } elseif (is_array($string)) {
       reset($string);
       while (list($key, $value) = each($string)) {

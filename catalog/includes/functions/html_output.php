@@ -1,6 +1,6 @@
 <?php
 /*
-  $Id: html_output.php,v 1.49 2003/02/11 01:31:02 hpdl Exp $
+  $Id: html_output.php,v 1.56 2003/07/09 01:15:48 hpdl Exp $
 
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
@@ -11,32 +11,28 @@
 */
 
 ////
-// Parse the data used in the html tags to ensure the tags will not break
-  function tep_parse_input_field_data($data, $parse) {
-    return strtr(trim($data), $parse);
-  }
- 
-////
 // The HTML href link wrapper function
   function tep_href_link($page = '', $parameters = '', $connection = 'NONSSL', $add_session_id = true, $search_engine_safe = true) {
+    global $request_type, $session_started, $SID;
+
     if (!tep_not_null($page)) {
       die('</td></tr></table></td></tr></table><br><br><font color="#ff0000"><b>Error!</b></font><br><br><b>Unable to determine the page link!<br><br>');
     }
 
     if ($connection == 'NONSSL') {
-      $link = HTTP_SERVER . DIR_WS_CATALOG;
+      $link = HTTP_SERVER . DIR_WS_HTTP_CATALOG;
     } elseif ($connection == 'SSL') {
       if (ENABLE_SSL == true) {
-        $link = HTTPS_SERVER . DIR_WS_CATALOG;
+        $link = HTTPS_SERVER . DIR_WS_HTTPS_CATALOG;
       } else {
-        $link = HTTP_SERVER . DIR_WS_CATALOG;
+        $link = HTTP_SERVER . DIR_WS_HTTP_CATALOG;
       }
     } else {
       die('</td></tr></table></td></tr></table><br><br><font color="#ff0000"><b>Error!</b></font><br><br><b>Unable to determine connection method on a link!<br><br>Known methods: NONSSL SSL</b><br><br>');
     }
 
     if (tep_not_null($parameters)) {
-      $link .= $page . '?' . $parameters;
+      $link .= $page . '?' . tep_output_string($parameters);
       $separator = '&';
     } else {
       $link .= $page;
@@ -45,11 +41,15 @@
 
     while ( (substr($link, -1) == '&') || (substr($link, -1) == '?') ) $link = substr($link, 0, -1);
 
-// Add the session ID when moving from HTTP and HTTPS servers or when SID is defined
-    if ( (ENABLE_SSL == true ) && ($connection == 'SSL') && ($add_session_id == true) ) {
-      $sid = tep_session_name() . '=' . tep_session_id();
-    } elseif ( ($add_session_id == true) && (tep_not_null(SID)) ) {
-      $sid = SID;
+// Add the session ID when moving from different HTTP and HTTPS servers, or when SID is defined
+    if ( ($add_session_id == true) && ($session_started == true) && (SESSION_FORCE_COOKIE_USE == 'False') ) {
+      if (tep_not_null($SID)) {
+        $_sid = $SID;
+      } elseif ( ( ($request_type == 'NONSSL') && ($connection == 'SSL') && (ENABLE_SSL == true) ) || ( ($request_type == 'SSL') && ($connection == 'NONSSL') ) ) {
+        if (HTTP_COOKIE_DOMAIN != HTTPS_COOKIE_DOMAIN) {
+          $_sid = tep_session_name() . '=' . tep_session_id();
+        }
+      }
     }
 
     if ( (SEARCH_ENGINE_FRIENDLY_URLS == 'true') && ($search_engine_safe == true) ) {
@@ -61,9 +61,9 @@
 
       $separator = '?';
     }
-    
-    if (isset($sid)) {
-      $link .= $separator . $sid;
+
+    if (isset($_sid)) {
+      $link .= $separator . $_sid;
     }
 
     return $link;
@@ -78,10 +78,10 @@
 
 // alt is added to the img tag even if it is null to prevent browsers from outputting
 // the image filename as default
-    $image = '<img src="' . tep_parse_input_field_data($src, array('"' => '&quot;')) . '" border="0" alt="' . tep_parse_input_field_data($alt, array('"' => '&quot;')) . '"';
+    $image = '<img src="' . tep_output_string($src) . '" border="0" alt="' . tep_output_string($alt) . '"';
 
     if (tep_not_null($alt)) {
-      $image .= ' title=" ' . tep_parse_input_field_data($alt, array('"' => '&quot;')) . ' "';
+      $image .= ' title=" ' . tep_output_string($alt) . ' "';
     }
 
     if ( (CONFIG_CALCULATE_IMAGE_SIZE == 'true') && (empty($width) || empty($height)) ) {
@@ -102,7 +102,7 @@
     }
 
     if (tep_not_null($width) && tep_not_null($height)) {
-      $image .= ' width="' . tep_parse_input_field_data($width, array('"' => '&quot;')) . '" height="' . tep_parse_input_field_data($height, array('"' => '&quot;')) . '"';
+      $image .= ' width="' . tep_output_string($width) . '" height="' . tep_output_string($height) . '"';
     }
 
     if (tep_not_null($parameters)) $image .= ' ' . $parameters;
@@ -118,9 +118,9 @@
   function tep_image_submit($image, $alt = '', $parameters = '') {
     global $language;
 
-    $image_submit = '<input type="image" src="' . tep_parse_input_field_data(DIR_WS_LANGUAGES . $language . '/images/buttons/' . $image, array('"' => '&quot;')) . '" border="0" alt="' . tep_parse_input_field_data($alt, array('"' => '&quot;')) . '"';
+    $image_submit = '<input type="image" src="' . tep_output_string(DIR_WS_LANGUAGES . $language . '/images/buttons/' . $image) . '" border="0" alt="' . tep_output_string($alt) . '"';
 
-    if (tep_not_null($alt)) $image_submit .= ' title=" ' . tep_parse_input_field_data($alt, array('"' => '&quot;')) . ' "';
+    if (tep_not_null($alt)) $image_submit .= ' title=" ' . tep_output_string($alt) . ' "';
 
     if (tep_not_null($parameters)) $image_submit .= ' ' . $parameters;
 
@@ -146,7 +146,7 @@
 ////
 // Output a form
   function tep_draw_form($name, $action, $method = 'post', $parameters = '') {
-    $form = '<form name="' . tep_parse_input_field_data($name, array('"' => '&quot;')) . '" action="' . tep_parse_input_field_data($action, array('"' => '&quot;')) . '" method="' . tep_parse_input_field_data($method, array('"' => '&quot;')) . '"';
+    $form = '<form name="' . tep_output_string($name) . '" action="' . tep_output_string($action) . '" method="' . tep_output_string($method) . '"';
 
     if (tep_not_null($parameters)) $form .= ' ' . $parameters;
 
@@ -158,12 +158,12 @@
 ////
 // Output a form input field
   function tep_draw_input_field($name, $value = '', $parameters = '', $type = 'text', $reinsert_value = true) {
-    $field = '<input type="' . tep_parse_input_field_data($type, array('"' => '&quot;')) . '" name="' . tep_parse_input_field_data($name, array('"' => '&quot;')) . '"';
+    $field = '<input type="' . tep_output_string($type) . '" name="' . tep_output_string($name) . '"';
 
     if ( (isset($GLOBALS[$name])) && ($reinsert_value == true) ) {
-      $field .= ' value="' . tep_parse_input_field_data($GLOBALS[$name], array('"' => '&quot;')) . '"';
+      $field .= ' value="' . tep_output_string(stripslashes($GLOBALS[$name])) . '"';
     } elseif (tep_not_null($value)) {
-      $field .= ' value="' . tep_parse_input_field_data($value, array('"' => '&quot;')) . '"';
+      $field .= ' value="' . tep_output_string($value) . '"';
     }
 
     if (tep_not_null($parameters)) $field .= ' ' . $parameters;
@@ -182,11 +182,11 @@
 ////
 // Output a selection field - alias function for tep_draw_checkbox_field() and tep_draw_radio_field()
   function tep_draw_selection_field($name, $type, $value = '', $checked = false, $parameters = '') {
-    $selection = '<input type="' . tep_parse_input_field_data($type, array('"' => '&quot;')) . '" name="' . tep_parse_input_field_data($name, array('"' => '&quot;')) . '"';
+    $selection = '<input type="' . tep_output_string($type) . '" name="' . tep_output_string($name) . '"';
 
-    if (tep_not_null($value)) $selection .= ' value="' . tep_parse_input_field_data($value, array('"' => '&quot;')) . '"';
+    if (tep_not_null($value)) $selection .= ' value="' . tep_output_string($value) . '"';
 
-    if ( ($checked == true) || ($GLOBALS[$name] == 'on') || ( (isset($value)) && ($GLOBALS[$name] == $value) ) ) {
+    if ( ($checked == true) || ( isset($GLOBALS[$name]) && is_string($GLOBALS[$name]) && ( ($GLOBALS[$name] == 'on') || (isset($value) && (stripslashes($GLOBALS[$name]) == $value)) ) ) ) {
       $selection .= ' CHECKED';
     }
 
@@ -212,14 +212,14 @@
 ////
 // Output a form textarea field
   function tep_draw_textarea_field($name, $wrap, $width, $height, $text = '', $parameters = '', $reinsert_value = true) {
-    $field = '<textarea name="' . tep_parse_input_field_data($name, array('"' => '&quot;')) . '" wrap="' . tep_parse_input_field_data($wrap, array('"' => '&quot;')) . '" cols="' . tep_parse_input_field_data($width, array('"' => '&quot;')) . '" rows="' . tep_parse_input_field_data($height, array('"' => '&quot;')) . '"';
+    $field = '<textarea name="' . tep_output_string($name) . '" wrap="' . tep_output_string($wrap) . '" cols="' . tep_output_string($width) . '" rows="' . tep_output_string($height) . '"';
 
     if (tep_not_null($parameters)) $field .= ' ' . $parameters;
 
     $field .= '>';
 
     if ( (isset($GLOBALS[$name])) && ($reinsert_value == true) ) {
-      $field .= $GLOBALS[$name];
+      $field .= stripslashes($GLOBALS[$name]);
     } elseif (tep_not_null($text)) {
       $field .= $text;
     }
@@ -232,17 +232,17 @@
 ////
 // Output a form hidden field
   function tep_draw_hidden_field($name, $value = '', $parameters = '') {
-    $field = '<input type="hidden" name="' . tep_parse_input_field_data($name, array('"' => '&quot;')) . '" value="';
+    $field = '<input type="hidden" name="' . tep_output_string($name) . '"';
 
     if (tep_not_null($value)) {
-      $field .= tep_parse_input_field_data($value, array('"' => '&quot;'));
-    } else {
-      $field .= tep_parse_input_field_data($GLOBALS[$name], array('"' => '&quot;'));
+      $field .= ' value="' . tep_output_string($value) . '"';
+    } elseif (isset($GLOBALS[$name])) {
+      $field .= ' value="' . tep_output_string(stripslashes($GLOBALS[$name])) . '"';
     }
 
     if (tep_not_null($parameters)) $field .= ' ' . $parameters;
 
-    $field .= '">';
+    $field .= '>';
 
     return $field;
   }
@@ -250,27 +250,31 @@
 ////
 // Hide form elements
   function tep_hide_session_id() {
-    if (defined('SID') && tep_not_null(SID)) return tep_draw_hidden_field(tep_session_name(), tep_session_id());
+    global $session_started, $SID;
+
+    if (($session_started == true) && tep_not_null($SID)) {
+      return tep_draw_hidden_field(tep_session_name(), tep_session_id());
+    }
   }
 
 ////
 // Output a form pull down menu
   function tep_draw_pull_down_menu($name, $values, $default = '', $parameters = '', $required = false) {
-    $field = '<select name="' . tep_parse_input_field_data($name, array('"' => '&quot;')) . '"';
+    $field = '<select name="' . tep_output_string($name) . '"';
 
     if (tep_not_null($parameters)) $field .= ' ' . $parameters;
 
     $field .= '>';
 
-    if (empty($default) && isset($GLOBALS[$name])) $default = $GLOBALS[$name];
+    if (empty($default) && isset($GLOBALS[$name])) $default = stripslashes($GLOBALS[$name]);
 
     for ($i=0, $n=sizeof($values); $i<$n; $i++) {
-      $field .= '<option value="' . tep_parse_input_field_data($values[$i]['id'], array('"' => '&quot;')) . '"';
+      $field .= '<option value="' . tep_output_string($values[$i]['id']) . '"';
       if ($default == $values[$i]['id']) {
         $field .= ' SELECTED';
       }
 
-      $field .= '>' . tep_parse_input_field_data($values[$i]['text'], array('"' => '&quot;', '\'' => '&#039;', '<' => '&lt;', '>' => '&gt;')) . '</option>';
+      $field .= '>' . tep_output_string($values[$i]['text'], array('"' => '&quot;', '\'' => '&#039;', '<' => '&lt;', '>' => '&gt;')) . '</option>';
     }
     $field .= '</select>';
 

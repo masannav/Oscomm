@@ -1,6 +1,6 @@
 <?php
 /*
-  $Id: address_book.php,v 1.13 2003/02/16 00:42:02 harley_vb Exp $
+  $Id: address_book.php,v 1.15 2003/07/11 09:04:22 jan0815 Exp $
 
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
@@ -12,13 +12,15 @@
 
 define('NAVBAR_TITLE_1', 'Ihr Konto');
 define('NAVBAR_TITLE_2', 'Adressbuch');
-define('HEADING_TITLE', 'Folgende Eintr&auml;ge verbinden wir z.Z. mit Ihrem Konto:');
 
-define('TABLE_HEADING_NUMBER', 'Nr.');
-define('TABLE_HEADING_NAME', 'Name');
-define('TABLE_HEADING_LOCATION', 'Wohnort');
+define('HEADING_TITLE', 'Mein Pers&ouml;nliches Adressbuch');
 
-define('TEXT_NO_ENTRIES_IN_ADDRESS_BOOK', 'Sie haben noch keine Eintr&auml;ge in Ihrem Adressbuch!');
+define('PRIMARY_ADDRESS_TITLE', 'Standardadresse');
+define('PRIMARY_ADDRESS_DESCRIPTION', 'Diese Adresse wird automatisch als Liefer- und Rechnungsadresse gew&auml;hlt wenn Sie eine Bestellung aufgeben.<br><br>Diese Adresse wird auch als Basis f&uuml;r die Berechnung eventueller Steuern udn Versandkosten verwendet.');
+
+define('ADDRESS_BOOK_TITLE', 'Adressbucheintr&auml;ge');
+
+define('PRIMARY_ADDRESS', '(Standardadresse)');
+
 define('TEXT_MAXIMUM_ENTRIES', '<font color="#ff0000"><b>Hinweis:</b></font> Ihnen stehen %s Adressbucheintr&auml;ge zur Verf&uuml;gung!');
-define('TEXT_MAXIMUM_ENTRIES_REACHED', '<font color="#ff0000"><b>ACHTUNG:</b></font> Sie haben die maximale Anzahl (%s) an Adressbucheintr&auml;gen erreicht!');
 ?>

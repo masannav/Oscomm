@@ -1,6 +1,6 @@
 <?php
 /*
-  $Id: application_top.php,v 1.264 2003/02/17 16:37:52 hpdl Exp $
+  $Id: application_top.php,v 1.280 2003/07/12 09:38:07 hpdl Exp $
 
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
@@ -22,131 +22,41 @@
     ini_get('register_globals') or exit('FATAL ERROR: register_globals is disabled in php.ini, please enable it!');
   }
 
-// disable use_trans_sid as tep_href_link() does this manually
-  if (function_exists('ini_set')) @ini_set('session.use_trans_sid', 0);
-
 // Set the local configuration parameters - mainly for developers
   if (file_exists('includes/local/configure.php')) include('includes/local/configure.php');
 
 // include server parameters
   require('includes/configure.php');
 
+  if (strlen(DB_SERVER) < 1) {
+    if (is_dir('install')) {
+      header('Location: install/index.php');
+    }
+  }
 
 // define the project version
-  define('PROJECT_VERSION', 'osCommerce 2.2-MS1');
+  define('PROJECT_VERSION', 'osCommerce 2.2-MS2');
 
 // set the type of request (secure or not)
   $request_type = (getenv('HTTPS') == 'on') ? 'SSL' : 'NONSSL';
 
-// define the filenames used in the project
-  define('FILENAME_ACCOUNT', 'account.php');
-  define('FILENAME_ACCOUNT_EDIT', 'account_edit.php');
-  define('FILENAME_ACCOUNT_EDIT_PROCESS', 'account_edit_process.php');
-  define('FILENAME_ACCOUNT_HISTORY', 'account_history.php');
-  define('FILENAME_ACCOUNT_HISTORY_INFO', 'account_history_info.php');
-  define('FILENAME_ADDRESS_BOOK', 'address_book.php');
-  define('FILENAME_ADDRESS_BOOK_PROCESS', 'address_book_process.php');
-  define('FILENAME_ADVANCED_SEARCH', 'advanced_search.php');
-  define('FILENAME_ADVANCED_SEARCH_RESULT', 'advanced_search_result.php');
-  define('FILENAME_ALSO_PURCHASED_PRODUCTS', 'also_purchased_products.php'); // This is the bottom of product_info.php (found in modules)
-  define('FILENAME_CHECKOUT_CONFIRMATION', 'checkout_confirmation.php');
-  define('FILENAME_CHECKOUT_PAYMENT', 'checkout_payment.php');
-  define('FILENAME_CHECKOUT_PAYMENT_ADDRESS', 'checkout_payment_address.php');
-  define('FILENAME_CHECKOUT_PROCESS', 'checkout_process.php');
-  define('FILENAME_CHECKOUT_SHIPPING', 'checkout_shipping.php');
-  define('FILENAME_CHECKOUT_SHIPPING_ADDRESS', 'checkout_shipping_address.php');
-  define('FILENAME_CHECKOUT_SUCCESS', 'checkout_success.php');
-  define('FILENAME_CONTACT_US', 'contact_us.php');
-  define('FILENAME_CONDITIONS', 'conditions.php');
-  define('FILENAME_CREATE_ACCOUNT', 'create_account.php');
-  define('FILENAME_CREATE_ACCOUNT_PROCESS', 'create_account_process.php');
-  define('FILENAME_CREATE_ACCOUNT_SUCCESS', 'create_account_success.php');
-  define('FILENAME_DEFAULT', 'default.php');
-  define('FILENAME_DOWNLOAD', 'download.php');
-  define('FILENAME_INFO_SHOPPING_CART', 'info_shopping_cart.php');
-  define('FILENAME_LOGIN', 'login.php');
-  define('FILENAME_LOGOFF', 'logoff.php');
-  define('FILENAME_NEW_PRODUCTS', 'new_products.php'); // This is the middle of default.php (found in modules)
-  define('FILENAME_PASSWORD_FORGOTTEN', 'password_forgotten.php');
-  define('FILENAME_POPUP_IMAGE', 'popup_image.php');
-  define('FILENAME_POPUP_SEARCH_HELP', 'popup_search_help.php');
-  define('FILENAME_PRIVACY', 'privacy.php');
-  define('FILENAME_PRODUCT_INFO', 'product_info.php');
-  define('FILENAME_PRODUCT_LISTING', 'product_listing.php');
-  define('FILENAME_PRODUCT_NOTIFICATIONS', 'product_notifications.php');
-  define('FILENAME_PRODUCT_REVIEWS', 'product_reviews.php');
-  define('FILENAME_PRODUCT_REVIEWS_INFO', 'product_reviews_info.php');
-  define('FILENAME_PRODUCT_REVIEWS_WRITE', 'product_reviews_write.php');
-  define('FILENAME_PRODUCTS_NEW', 'products_new.php');
-  define('FILENAME_REDIRECT', 'redirect.php');
-  define('FILENAME_REVIEWS', 'reviews.php');
-  define('FILENAME_SHIPPING', 'shipping.php');
-  define('FILENAME_SHOPPING_CART', 'shopping_cart.php');
-  define('FILENAME_SPECIALS', 'specials.php');
-  define('FILENAME_TELL_A_FRIEND', 'tell_a_friend.php');
-  define('FILENAME_UPCOMING_PRODUCTS', 'upcoming_products.php'); // This is the bottom of default.php (found in modules)
+// set php_self in the local scope
+  if (!isset($PHP_SELF)) $PHP_SELF = $HTTP_SERVER_VARS['PHP_SELF'];
 
-// define the database table names used in the project
-  define('TABLE_ADDRESS_BOOK', 'address_book');
-  define('TABLE_ADDRESS_FORMAT', 'address_format');
-  define('TABLE_BANNERS', 'banners');
-  define('TABLE_BANNERS_HISTORY', 'banners_history');
-  define('TABLE_CATEGORIES', 'categories');
-  define('TABLE_CATEGORIES_DESCRIPTION', 'categories_description');
-  define('TABLE_CONFIGURATION', 'configuration');
-  define('TABLE_CONFIGURATION_GROUP', 'configuration_group');
-  define('TABLE_COUNTER', 'counter');
-  define('TABLE_COUNTER_HISTORY', 'counter_history');
-  define('TABLE_COUNTRIES', 'countries');
-  define('TABLE_CURRENCIES', 'currencies');
-  define('TABLE_CUSTOMERS', 'customers');
-  define('TABLE_CUSTOMERS_BASKET', 'customers_basket');
-  define('TABLE_CUSTOMERS_BASKET_ATTRIBUTES', 'customers_basket_attributes');
-  define('TABLE_CUSTOMERS_INFO', 'customers_info');
-  define('TABLE_LANGUAGES', 'languages');
-  define('TABLE_MANUFACTURERS', 'manufacturers');
-  define('TABLE_MANUFACTURERS_INFO', 'manufacturers_info');
-  define('TABLE_ORDERS', 'orders');
-  define('TABLE_ORDERS_PRODUCTS', 'orders_products');
-  define('TABLE_ORDERS_PRODUCTS_ATTRIBUTES', 'orders_products_attributes');
-  define('TABLE_ORDERS_PRODUCTS_DOWNLOAD', 'orders_products_download');
-  define('TABLE_ORDERS_STATUS', 'orders_status');
-  define('TABLE_ORDERS_STATUS_HISTORY', 'orders_status_history');
-  define('TABLE_ORDERS_TOTAL', 'orders_total');
-  define('TABLE_PRODUCTS', 'products');
-  define('TABLE_PRODUCTS_ATTRIBUTES', 'products_attributes');
-  define('TABLE_PRODUCTS_ATTRIBUTES_DOWNLOAD', 'products_attributes_download');
-  define('TABLE_PRODUCTS_DESCRIPTION', 'products_description');
-  define('TABLE_PRODUCTS_NOTIFICATIONS', 'products_notifications');
-  define('TABLE_PRODUCTS_OPTIONS', 'products_options');
-  define('TABLE_PRODUCTS_OPTIONS_VALUES', 'products_options_values');
-  define('TABLE_PRODUCTS_OPTIONS_VALUES_TO_PRODUCTS_OPTIONS', 'products_options_values_to_products_options');
-  define('TABLE_PRODUCTS_TO_CATEGORIES', 'products_to_categories');
-  define('TABLE_REVIEWS', 'reviews');
-  define('TABLE_REVIEWS_DESCRIPTION', 'reviews_description');
-  define('TABLE_SESSIONS', 'sessions');
-  define('TABLE_SPECIALS', 'specials');
-  define('TABLE_TAX_CLASS', 'tax_class');
-  define('TABLE_TAX_RATES', 'tax_rates');
-  define('TABLE_GEO_ZONES', 'geo_zones');
-  define('TABLE_ZONES_TO_GEO_ZONES', 'zones_to_geo_zones');
-  define('TABLE_WHOS_ONLINE', 'whos_online');
-  define('TABLE_ZONES', 'zones');
+  if ($request_type == 'NONSSL') {
+    define('DIR_WS_CATALOG', DIR_WS_HTTP_CATALOG);
+  } else {
+    define('DIR_WS_CATALOG', DIR_WS_HTTPS_CATALOG);
+  }
+
+// include the list of project filenames
+  require(DIR_WS_INCLUDES . 'filenames.php');
+
+// include the list of project database tables
+  require(DIR_WS_INCLUDES . 'database_tables.php');
 
 // customization for the design layout
   define('BOX_WIDTH', 125); // how wide the boxes should be in pixels (default: 125)
-
-// check if sessions are supported, otherwise use the php3 compatible session class
-  if (!function_exists('session_start')) {
-    define('PHP_SESSION_NAME', 'sID');
-    define('PHP_SESSION_SAVE_PATH', '/tmp');
-
-    include(DIR_WS_CLASSES . 'sessions.php');
-  }
-
-// define how the session functions will be used
-  require(DIR_WS_FUNCTIONS . 'sessions.php');
-  tep_session_name('osCsid');
 
 // include the database functions
   require(DIR_WS_FUNCTIONS . 'database.php');
@@ -154,8 +64,8 @@
 // make a connection to the database... now
   tep_db_connect() or die('Unable to connect to database server!');
 
-// set the application parameters (can be modified through the administration tool)
-  $configuration_query = tep_db_query('select configuration_key as cfgKey, configuration_value as cfgValue from ' . TABLE_CONFIGURATION . '');
+// set the application parameters
+  $configuration_query = tep_db_query('select configuration_key as cfgKey, configuration_value as cfgValue from ' . TABLE_CONFIGURATION);
   while ($configuration = tep_db_fetch_array($configuration_query)) {
     define($configuration['cfgKey'], $configuration['cfgValue']);
   }
@@ -178,27 +88,33 @@
 // set the HTTP GET parameters manually if search_engine_friendly_urls is enabled
   if (SEARCH_ENGINE_FRIENDLY_URLS == 'true') {
     if (strlen(getenv('PATH_INFO')) > 1) {
-      $GET_arrays = array();
-      $PHP_SELF = str_replace(getenv('PATH_INFO'), '', $HTTP_SERVER_VARS['PHP_SELF']);
+      $GET_array = array();
+      $PHP_SELF = str_replace(getenv('PATH_INFO'), '', $PHP_SELF);
       $vars = explode('/', substr(getenv('PATH_INFO'), 1));
       for ($i=0, $n=sizeof($vars); $i<$n; $i++) {
         if (strpos($vars[$i], '[]')) {
-          $GET_arrays[substr($vars[$i], 0, -2)][] = $vars[$i+1];
+          $GET_array[substr($vars[$i], 0, -2)][] = $vars[$i+1];
         } else {
           $HTTP_GET_VARS[$vars[$i]] = $vars[$i+1];
         }
-        $i++; 
+        $i++;
       }
 
-      if (sizeof($GET_arrays) > 0) {
-        while (list($key, $value) = each($GET_arrays)) {
+      if (sizeof($GET_array) > 0) {
+        while (list($key, $value) = each($GET_array)) {
           $HTTP_GET_VARS[$key] = $value;
         }
       }
     }
-  } else {
-    $PHP_SELF = $HTTP_SERVER_VARS['PHP_SELF'];
   }
+
+// define general functions used application-wide
+  require(DIR_WS_FUNCTIONS . 'general.php');
+  require(DIR_WS_FUNCTIONS . 'html_output.php');
+
+// set the cookie domain
+  $cookie_domain = (($request_type == 'NONSSL') ? HTTP_COOKIE_DOMAIN : HTTPS_COOKIE_DOMAIN);
+  $cookie_path = (($request_type == 'NONSSL') ? HTTP_COOKIE_PATH : HTTPS_COOKIE_PATH);
 
 // include cache functions if enabled
   if (USE_CACHE == 'true') include(DIR_WS_FUNCTIONS . 'cache.php');
@@ -212,20 +128,120 @@
 // some code to solve compatibility issues
   require(DIR_WS_FUNCTIONS . 'compatibility.php');
 
-// lets start our session
+// check if sessions are supported, otherwise use the php3 compatible session class
+  if (!function_exists('session_start')) {
+    define('PHP_SESSION_NAME', 'osCsid');
+    define('PHP_SESSION_PATH', $cookie_path);
+    define('PHP_SESSION_DOMAIN', $cookie_domain);
+    define('PHP_SESSION_SAVE_PATH', SESSION_WRITE_DIRECTORY);
+
+    include(DIR_WS_CLASSES . 'sessions.php');
+  }
+
+// define how the session functions will be used
+  require(DIR_WS_FUNCTIONS . 'sessions.php');
+
+// set the session name and save path
+  tep_session_name('osCsid');
+  tep_session_save_path(SESSION_WRITE_DIRECTORY);
+
+// set the session cookie parameters
+   if (function_exists('session_set_cookie_params')) {
+    session_set_cookie_params(0, $cookie_path, $cookie_domain);
+  } elseif (function_exists('ini_set')) {
+    ini_set('session.cookie_lifetime', '0');
+    ini_set('session.cookie_path', $cookie_path);
+    ini_set('session.cookie_domain', $cookie_domain);
+  }
+
+// set the session ID if it exists
    if (isset($HTTP_POST_VARS[tep_session_name()])) {
      tep_session_id($HTTP_POST_VARS[tep_session_name()]);
-   } elseif ( (getenv('HTTPS') == 'on') && isset($HTTP_GET_VARS[tep_session_name()]) ) {
+   } elseif ( ($request_type == 'SSL') && isset($HTTP_GET_VARS[tep_session_name()]) ) {
      tep_session_id($HTTP_GET_VARS[tep_session_name()]);
    }
 
-   if (function_exists('session_set_cookie_params')) {
-    session_set_cookie_params(0, substr(DIR_WS_CATALOG, 0, -1));
+// start the session
+  $session_started = false;
+  if (SESSION_FORCE_COOKIE_USE == 'True') {
+    tep_setcookie('cookie_test', 'please_accept_for_session', time()+60*60*24*30, $cookie_path, $cookie_domain);
+
+    if (isset($HTTP_COOKIE_VARS['cookie_test'])) {
+      tep_session_start();
+      $session_started = true;
+    }
+  } elseif (SESSION_BLOCK_SPIDERS == 'True') {
+    $user_agent = strtolower(getenv('HTTP_USER_AGENT'));
+    $spider_flag = false;
+
+    if (tep_not_null($user_agent)) {
+      $spiders = file(DIR_WS_INCLUDES . 'spiders.txt');
+
+      for ($i=0, $n=sizeof($spiders); $i<$n; $i++) {
+        if (tep_not_null($spiders[$i])) {
+          if (is_integer(strpos($user_agent, trim($spiders[$i])))) {
+            $spider_flag = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if ($spider_flag == false) {
+      tep_session_start();
+      $session_started = true;
+    }
+  } else {
+    tep_session_start();
+    $session_started = true;
   }
 
-  tep_session_start();
+// set SID once, even if empty
+  $SID = (defined('SID') ? SID : '');
 
-// Create the cart & Fix the cart if necesary
+// verify the ssl_session_id if the feature is enabled
+  if ( ($request_type == 'SSL') && (SESSION_CHECK_SSL_SESSION_ID == 'True') && (ENABLE_SSL == true) && ($session_started == true) ) {
+    $ssl_session_id = getenv('SSL_SESSION_ID');
+    if (!tep_session_is_registered('SSL_SESSION_ID')) {
+      $SESSION_SSL_ID = $ssl_session_id;
+      tep_session_register('SESSION_SSL_ID');
+    }
+
+    if ($SESSION_SSL_ID != $ssl_session_id) {
+      tep_session_destroy();
+      tep_redirect(tep_href_link(FILENAME_SSL_CHECK));
+    }
+  }
+
+// verify the browser user agent if the feature is enabled
+  if (SESSION_CHECK_USER_AGENT == 'True') {
+    $http_user_agent = getenv('HTTP_USER_AGENT');
+    if (!tep_session_is_registered('SESSION_USER_AGENT')) {
+      $SESSION_USER_AGENT = $http_user_agent;
+      tep_session_register('SESSION_USER_AGENT');
+    }
+
+    if ($SESSION_USER_AGENT != $http_user_agent) {
+      tep_session_destroy();
+      tep_redirect(tep_href_link(FILENAME_LOGIN));
+    }
+  }
+
+// verify the IP address if the feature is enabled
+  if (SESSION_CHECK_IP_ADDRESS == 'True') {
+    $ip_address = tep_get_ip_address();
+    if (!tep_session_is_registered('SESSION_IP_ADDRESS')) {
+      $SESSION_IP_ADDRESS = $ip_address;
+      tep_session_register('SESSION_IP_ADDRESS');
+    }
+
+    if ($SESSION_IP_ADDRESS != $ip_address) {
+      tep_session_destroy();
+      tep_redirect(tep_href_link(FILENAME_LOGIN));
+    }
+  }
+
+// create the shopping cart & fix the cart if necesary
   if (tep_session_is_registered('cart') && is_object($cart)) {
     if (PHP_VERSION < 4) {
       $broken_cart = $cart;
@@ -245,7 +261,7 @@
   require(DIR_WS_CLASSES . 'mime.php');
   require(DIR_WS_CLASSES . 'email.php');
 
-// language
+// set the language
   if (!tep_session_is_registered('language') || isset($HTTP_GET_VARS['language'])) {
     if (!tep_session_is_registered('language')) {
       tep_session_register('language');
@@ -253,9 +269,13 @@
     }
 
     include(DIR_WS_CLASSES . 'language.php');
-    $lng = new language($HTTP_GET_VARS['language']);
+    $lng = new language();
 
-    if (!isset($HTTP_GET_VARS['language'])) $lng->get_browser_language();
+    if (isset($HTTP_GET_VARS['language']) && tep_not_null($HTTP_GET_VARS['language'])) {
+      $lng->set_language($HTTP_GET_VARS['language']);
+    } else {
+      $lng->get_browser_language();
+    }
 
     $language = $lng->language['directory'];
     $languages_id = $lng->language['id'];
@@ -263,10 +283,6 @@
 
 // include the language translations
   require(DIR_WS_LANGUAGES . $language . '.php');
-
-// define our general functions used application-wide
-  require(DIR_WS_FUNCTIONS . 'general.php');
-  require(DIR_WS_FUNCTIONS . 'html_output.php');
 
 // currency
   if (!tep_session_is_registered('currency') || isset($HTTP_GET_VARS['currency']) || ( (USE_DEFAULT_LANGUAGE_CURRENCY == 'true') && (LANGUAGE_CURRENCY != $currency) ) ) {
@@ -294,6 +310,11 @@
 
 // Shopping cart actions
   if (isset($HTTP_GET_VARS['action'])) {
+// redirect the customer to a friendly cookie-must-be-enabled page if cookies are disabled
+    if ($session_started == false) {
+      tep_redirect(tep_href_link(FILENAME_COOKIE_USAGE));
+    }
+
     if (DISPLAY_CART == 'true') {
       $goto =  FILENAME_SHOPPING_CART;
       $parameters = array('action', 'cPath', 'products_id', 'pid');
@@ -448,7 +469,7 @@
 // add category names or the manufacturer name to the breadcrumb trail
   if (isset($cPath_array)) {
     for ($i=0, $n=sizeof($cPath_array); $i<$n; $i++) {
-      $categories_query = tep_db_query("select categories_name from " . TABLE_CATEGORIES_DESCRIPTION . " where categories_id = '" . $cPath_array[$i] . "' and language_id='" . $languages_id . "'");
+      $categories_query = tep_db_query("select categories_name from " . TABLE_CATEGORIES_DESCRIPTION . " where categories_id = '" . (int)$cPath_array[$i] . "' and language_id = '" . (int)$languages_id . "'");
       if (tep_db_num_rows($categories_query) > 0) {
         $categories = tep_db_fetch_array($categories_query);
         $breadcrumb->add($categories['categories_name'], tep_href_link(FILENAME_DEFAULT, 'cPath=' . implode('_', array_slice($cPath_array, 0, ($i+1)))));
@@ -457,17 +478,25 @@
       }
     }
   } elseif (isset($HTTP_GET_VARS['manufacturers_id'])) {
-    $manufacturers_query = tep_db_query("select manufacturers_name from " . TABLE_MANUFACTURERS . " where manufacturers_id = '" . $HTTP_GET_VARS['manufacturers_id'] . "'");
-    $manufacturers = tep_db_fetch_array($manufacturers_query);
-    $breadcrumb->add($manufacturers['manufacturers_name'], tep_href_link(FILENAME_DEFAULT, 'manufacturers_id=' . $HTTP_GET_VARS['manufacturers_id']));
+    $manufacturers_query = tep_db_query("select manufacturers_name from " . TABLE_MANUFACTURERS . " where manufacturers_id = '" . (int)$HTTP_GET_VARS['manufacturers_id'] . "'");
+    if (tep_db_num_rows($manufacturers_query)) {
+      $manufacturers = tep_db_fetch_array($manufacturers_query);
+      $breadcrumb->add($manufacturers['manufacturers_name'], tep_href_link(FILENAME_DEFAULT, 'manufacturers_id=' . $HTTP_GET_VARS['manufacturers_id']));
+    }
   }
 
 // add the products model to the breadcrumb trail
   if (isset($HTTP_GET_VARS['products_id'])) {
-    $model_query = tep_db_query("select products_model from " . TABLE_PRODUCTS . " where products_id = '" . $HTTP_GET_VARS['products_id'] . "'");
-    $model = tep_db_fetch_array($model_query);
-    $breadcrumb->add($model['products_model'], tep_href_link(FILENAME_PRODUCT_INFO, 'cPath=' . $cPath . '&products_id=' . $HTTP_GET_VARS['products_id']));
+    $model_query = tep_db_query("select products_model from " . TABLE_PRODUCTS . " where products_id = '" . (int)$HTTP_GET_VARS['products_id'] . "'");
+    if (tep_db_num_rows($model_query)) {
+      $model = tep_db_fetch_array($model_query);
+      $breadcrumb->add($model['products_model'], tep_href_link(FILENAME_PRODUCT_INFO, 'cPath=' . $cPath . '&products_id=' . $HTTP_GET_VARS['products_id']));
+    }
   }
+
+// initialize the message stack for output messages
+  require(DIR_WS_CLASSES . 'message_stack.php');
+  $messageStack = new messageStack;
 
 // set which precautions should be checked
   define('WARN_INSTALL_EXISTENCE', 'true');

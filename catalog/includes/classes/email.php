@@ -1,11 +1,11 @@
 <?php
 /*
-  $Id: email.php,v 1.9 2002/08/12 22:54:48 hpdl Exp $
+  $Id: email.php,v 1.12 2003/06/17 17:29:44 dgw_ Exp $
 
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
 
-  Copyright (c) 2002 osCommerce
+  Copyright (c) 2003 osCommerce
 
   Released under the GNU General Public License
 
@@ -146,7 +146,7 @@
  */
 
     function add_text($text = '') {
-      $this->text = $text;
+      $this->text = tep_convert_linefeeds(array("\r\n", "\n", "\r"), $this->lf, $text);
     }
 
 /**
@@ -156,8 +156,8 @@
  */
 
     function add_html($html, $text = NULL, $images_dir = NULL) {
-      $this->html = $html;
-      $this->html_text = $text;
+      $this->html = tep_convert_linefeeds(array("\r\n", "\n", "\r"), '<br>', $html);
+      $this->html_text = tep_convert_linefeeds(array("\r\n", "\n", "\r"), $this->lf, $text);
 
       if (isset($images_dir)) $this->find_html_images($images_dir);
     }

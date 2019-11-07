@@ -1,6 +1,6 @@
 <?php
 /*
-  $Id: checkout_payment_address.php,v 1.7 2003/02/13 04:23:22 hpdl Exp $
+  $Id: checkout_payment_address.php,v 1.14 2003/06/09 23:03:53 hpdl Exp $
 
   osCommerce, Open Source E-Commerce Solutions
   http://www.oscommerce.com
@@ -23,6 +23,9 @@
     tep_redirect(tep_href_link(FILENAME_SHOPPING_CART));
   }
 
+// needs to be included earlier to set the success message in the messageStack
+  require(DIR_WS_LANGUAGES . $language . '/' . FILENAME_CHECKOUT_PAYMENT_ADDRESS);
+
   $error = false;
   $process = false;
   if (isset($HTTP_POST_VARS['action']) && ($HTTP_POST_VARS['action'] == 'submit')) {
@@ -30,116 +33,94 @@
     if (tep_not_null($HTTP_POST_VARS['firstname']) && tep_not_null($HTTP_POST_VARS['lastname']) && tep_not_null($HTTP_POST_VARS['street_address'])) {
       $process = true;
 
-      $gender = tep_db_prepare_input($HTTP_POST_VARS['gender']);
-      $company = tep_db_prepare_input($HTTP_POST_VARS['company']);
+      if (ACCOUNT_GENDER == 'true') $gender = tep_db_prepare_input($HTTP_POST_VARS['gender']);
+      if (ACCOUNT_COMPANY == 'true') $company = tep_db_prepare_input($HTTP_POST_VARS['company']);
       $firstname = tep_db_prepare_input($HTTP_POST_VARS['firstname']);
       $lastname = tep_db_prepare_input($HTTP_POST_VARS['lastname']);
       $street_address = tep_db_prepare_input($HTTP_POST_VARS['street_address']);
-      $suburb = tep_db_prepare_input($HTTP_POST_VARS['suburb']);
+      if (ACCOUNT_SUBURB == 'true') $suburb = tep_db_prepare_input($HTTP_POST_VARS['suburb']);
       $postcode = tep_db_prepare_input($HTTP_POST_VARS['postcode']);
       $city = tep_db_prepare_input($HTTP_POST_VARS['city']);
       $country = tep_db_prepare_input($HTTP_POST_VARS['country']);
-      $zone_id = tep_db_prepare_input($HTTP_POST_VARS['zone_id']);
-      $state = tep_db_prepare_input($HTTP_POST_VARS['state']);
-
-      if (ACCOUNT_GENDER == 'true') {
-        if (($gender == 'm') || ($gender == 'f')) {
-          $gender_error = false;
+      if (ACCOUNT_STATE == 'true') {
+        if (isset($HTTP_POST_VARS['zone_id'])) {
+          $zone_id = tep_db_prepare_input($HTTP_POST_VARS['zone_id']);
         } else {
-          $gender_error = true;
-          $error = true;
+          $zone_id = false;
         }
+        $state = tep_db_prepare_input($HTTP_POST_VARS['state']);
       }
 
-      if (ACCOUNT_COMPANY == 'true') {
-        if (strlen($company) < ENTRY_COMPANY_MIN_LENGTH) {
-          $company_error = true;
+      if (ACCOUNT_GENDER == 'true') {
+        if ( ($gender != 'm') && ($gender != 'f') ) {
           $error = true;
-        } else {
-          $company_error = false;
+
+          $messageStack->add('checkout_address', ENTRY_GENDER_ERROR);
         }
       }
 
       if (strlen($firstname) < ENTRY_FIRST_NAME_MIN_LENGTH) {
-        $firstname_error = true;
         $error = true;
-      } else {
-        $firstname_error = false;
+
+        $messageStack->add('checkout_address', ENTRY_FIRST_NAME_ERROR);
       }
 
       if (strlen($lastname) < ENTRY_LAST_NAME_MIN_LENGTH) {
-        $lastname_error = true;
         $error = true;
-      } else {
-        $lasttname_error = false;
+
+        $messageStack->add('checkout_address', ENTRY_LAST_NAME_ERROR);
       }
 
       if (strlen($street_address) < ENTRY_STREET_ADDRESS_MIN_LENGTH) {
-        $street_address_error = true;
         $error = true;
-      } else {
-        $street_address_error = false;
+
+        $messageStack->add('checkout_address', ENTRY_STREET_ADDRESS_ERROR);
       }
 
       if (strlen($postcode) < ENTRY_POSTCODE_MIN_LENGTH) {
-        $postcode_error = true;
         $error = true;
-      } else {
-        $postcode_error = false;
+
+        $messageStack->add('checkout_address', ENTRY_POST_CODE_ERROR);
       }
 
       if (strlen($city) < ENTRY_CITY_MIN_LENGTH) {
-        $city_error = true;
         $error = true;
-      } else {
-        $city_error = false;
-      }
 
-      if (strlen($country) < 1) {
-        $country_error = true;
-        $error = true;
-      } else {
-        $country_error = false;
+        $messageStack->add('checkout_address', ENTRY_CITY_ERROR);
       }
 
       if (ACCOUNT_STATE == 'true') {
-        if ($entry_country_error == true) {
-          $entry_state_error = true;
-        } else {
-          $zone_id = 0;
-          $entry_state_error = false;
-          $check_query = tep_db_query("select count(*) as total from " . TABLE_ZONES . " where zone_country_id = '" . tep_db_input($country) . "'");
-          $check_value = tep_db_fetch_array($check_query);
-          $entry_state_has_zones = ($check_value['total'] > 0);
-          if ($entry_state_has_zones == true) {
-            $zone_query = tep_db_query("select zone_id from " . TABLE_ZONES . " where zone_country_id = '" . tep_db_input($country) . "' and zone_name = '" . tep_db_input($state) . "'");
-            if (tep_db_num_rows($zone_query) == 1) {
-              $zone_values = tep_db_fetch_array($zone_query);
-              $zone_id = $zone_values['zone_id'];
-            } else {
-              $error = true;
-              $entry_state_error = true;
-            }
+        $zone_id = 0;
+        $check_query = tep_db_query("select count(*) as total from " . TABLE_ZONES . " where zone_country_id = '" . (int)$country . "'");
+        $check = tep_db_fetch_array($check_query);
+        $entry_state_has_zones = ($check['total'] > 0);
+        if ($entry_state_has_zones == true) {
+          $zone_query = tep_db_query("select distinct zone_id from " . TABLE_ZONES . " where zone_country_id = '" . (int)$country . "' and (zone_name like '" . tep_db_input($state) . "%' or zone_code like '%" . tep_db_input($state) . "%')");
+          if (tep_db_num_rows($zone_query) == 1) {
+            $zone = tep_db_fetch_array($zone_query);
+            $zone_id = $zone['zone_id'];
           } else {
-            if (!$state) {
-              $error = true;
-              $entry_state_error = true;
-            }
+            $error = true;
+
+            $messageStack->add('checkout_address', ENTRY_STATE_ERROR_SELECT);
+          }
+        } else {
+          if (strlen($state) < ENTRY_STATE_MIN_LENGTH) {
+            $error = true;
+
+            $messageStack->add('checkout_address', ENTRY_STATE_ERROR);
           }
         }
       }
 
-      if ($error == false) {
-        $next_id_query = tep_db_query("select max(address_book_id) as address_book_id from " . TABLE_ADDRESS_BOOK . " where customers_id = '" . $customer_id . "'");
-        if (tep_db_num_rows($next_id_query)) {
-          $next_id = tep_db_fetch_array($next_id_query);
-          $entry_id = $next_id['address_book_id']+1;
-        } else {
-          $entry_id = 1;
-        }
+      if ( (is_numeric($country) == false) || ($country < 1) ) {
+        $error = true;
 
+        $messageStack->add('checkout_address', ENTRY_COUNTRY_ERROR);
+      }
+
+      if ($error == false) {
         $sql_data_array = array('customers_id' => $customer_id,
-                                'address_book_id' => $entry_id,
                                 'entry_firstname' => $firstname,
                                 'entry_lastname' => $lastname,
                                 'entry_street_address' => $street_address,
@@ -164,7 +145,7 @@
 
         tep_db_perform(TABLE_ADDRESS_BOOK, $sql_data_array);
 
-        $billto = $entry_id;
+        $billto = tep_db_insert_id();
 
         if (tep_session_is_registered('payment')) tep_session_unregister('payment');
 
@@ -208,10 +189,10 @@
     $billto = $customer_default_address_id;
   }
 
-  require(DIR_WS_LANGUAGES . $language . '/' . FILENAME_CHECKOUT_PAYMENT_ADDRESS);
-
   $breadcrumb->add(NAVBAR_TITLE_1, tep_href_link(FILENAME_CHECKOUT_PAYMENT, '', 'SSL'));
   $breadcrumb->add(NAVBAR_TITLE_2, tep_href_link(FILENAME_CHECKOUT_PAYMENT_ADDRESS, '', 'SSL'));
+
+  $addresses_count = tep_count_customer_address_book_entries();
 ?>
 <!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html <?php echo HTML_PARAMS; ?>>
@@ -252,81 +233,21 @@ function rowOutEffect(object) {
   if (object.className == 'moduleRowOver') object.className = 'moduleRow';
 }
 
-function check_form() {
-  var error = 0;
-  var error_message = "<?php echo JS_ERROR; ?>";
+function check_form_optional(form_name) {
+  var form = form_name;
 
-  var firstname = document.checkout_address.firstname.value;
-  var lastname = document.checkout_address.lastname.value;
-  var street_address = document.checkout_address.street_address.value;
-  var postcode = document.checkout_address.postcode.value;
-  var city = document.checkout_address.city.value;
+  var firstname = form.elements['firstname'].value;
+  var lastname = form.elements['lastname'].value;
+  var street_address = form.elements['street_address'].value;
 
   if (firstname == '' && lastname == '' && street_address == '') {
     return true;
-  }
-
-<?php
- if (ACCOUNT_GENDER == 'true') {
-?>
-  if (document.checkout_address.elements['gender'].type != "hidden") {
-    if (document.checkout_address.gender[0].checked || document.checkout_address.gender[1].checked) {
-    } else {
-      error_message = error_message + "<?php echo JS_GENDER; ?>";
-      error = 1;
-    }
-  }
-<?php
- }
-?>
-  if (firstname == "" || firstname.length < <?php echo ENTRY_FIRST_NAME_MIN_LENGTH; ?>) {
-    error_message = error_message + "<?php echo JS_FIRST_NAME; ?>";
-    error = 1;
-  }
-
-  if (lastname == "" || lastname.length < <?php echo ENTRY_LAST_NAME_MIN_LENGTH; ?>) {
-    error_message = error_message + "<?php echo JS_LAST_NAME; ?>";
-    error = 1;
-  }
-
-  if (street_address == "" || street_address.length < <?php echo ENTRY_STREET_ADDRESS_MIN_LENGTH; ?>) {
-    error_message = error_message + "<?php echo JS_ADDRESS; ?>";
-    error = 1;
-  }
-
-  if (postcode == "" || postcode.length < <?php echo ENTRY_POSTCODE_MIN_LENGTH; ?>) {
-    error_message = error_message + "<?php echo JS_POST_CODE; ?>";
-    error = 1;
-  }
-
-  if (city == "" || city.length < <?php echo ENTRY_CITY_MIN_LENGTH; ?>) {
-    error_message = error_message + "<?php echo JS_CITY; ?>";
-    error = 1;
-  }
-<?php
-  if (ACCOUNT_STATE == 'true') {
-?>
-  if (document.checkout_address.state.value == "" || document.checkout_address.state.length < <?php echo ENTRY_STATE_MIN_LENGTH; ?> ) {
-     error_message = error_message + "<?php echo JS_STATE; ?>";
-     error = 1;
-  }
-<?php
-  }
-?>
-
-  if (document.checkout_address.country.value == 0) {
-    error_message = error_message + "<?php echo JS_COUNTRY; ?>";
-    error = 1;
-  }
-
-  if (error == 1) {
-    alert(error_message);
-    return false;
   } else {
-    return true;
+    return check_form(form_name);
   }
 }
 //--></script>
+<?php require(DIR_WS_INCLUDES . 'form_check.js.php'); ?>
 </head>
 <body marginwidth="0" marginheight="0" topmargin="0" bottommargin="0" leftmargin="0" rightmargin="0">
 <!-- header //-->
@@ -342,7 +263,7 @@ function check_form() {
 <!-- left_navigation_eof //-->
     </table></td>
 <!-- body_text //-->
-    <td width="100%" valign="top"><?php echo tep_draw_form('checkout_address', tep_href_link(FILENAME_CHECKOUT_PAYMENT_ADDRESS, '', 'SSL'), 'post', 'onSubmit="return check_form();"'); ?><table border="0" width="100%" cellspacing="0" cellpadding="0">
+    <td width="100%" valign="top"><?php echo tep_draw_form('checkout_address', tep_href_link(FILENAME_CHECKOUT_PAYMENT_ADDRESS, '', 'SSL'), 'post', 'onSubmit="return check_form_optional(checkout_address);"'); ?><table border="0" width="100%" cellspacing="0" cellpadding="0">
       <tr>
         <td><table border="0" width="100%" cellspacing="0" cellpadding="0">
           <tr>
@@ -355,27 +276,10 @@ function check_form() {
         <td><?php echo tep_draw_separator('pixel_trans.gif', '100%', '10'); ?></td>
       </tr>
 <?php
-  if ($process == true) {
+  if ($messageStack->size('checkout_address') > 0) {
 ?>
       <tr>
-        <td><table border="0" width="100%" cellspacing="0" cellpadding="2">
-          <tr>
-            <td class="main"><b><?php echo TABLE_HEADING_NEW_PAYMENT_ADDRESS_PROBLEM; ?></b></td>
-          </tr>
-        </table></td>
-      </tr>
-      <tr>
-        <td><table border="0" width="100%" cellspacing="1" cellpadding="2" class="infoBoxNotice">
-          <tr class="infoBoxNoticeContents">
-            <td><table border="0" width="100%" cellspacing="0" cellpadding="2">
-              <tr>
-                <td><?php echo tep_draw_separator('pixel_trans.gif', '10', '1'); ?></td>
-                <td class="main" width="100%" valign="top"><?php echo TEXT_NEW_PAYMENT_ADDRESS_PROBLEM; ?></td>
-                <td><?php echo tep_draw_separator('pixel_trans.gif', '10', '1'); ?></td>
-              </tr>
-            </table></td>
-          </tr>
-        </table></td>
+        <td><?php echo $messageStack->output('checkout_address'); ?></td>
       </tr>
       <tr>
         <td><?php echo tep_draw_separator('pixel_trans.gif', '100%', '10'); ?></td>
@@ -416,10 +320,7 @@ function check_form() {
         <td><?php echo tep_draw_separator('pixel_trans.gif', '100%', '10'); ?></td>
       </tr>
 <?php
-    $addresses_count_query = tep_db_query("select count(*) as total from " . TABLE_ADDRESS_BOOK . " where customers_id = '" . $customer_id . "' and address_book_id != '" . $billto . "'");
-    $addresses_count = tep_db_fetch_array($addresses_count_query);
-
-    if ($addresses_count['total'] > 0) {
+    if ($addresses_count > 1) {
 ?>
       <tr>
         <td><table border="0" width="100%" cellspacing="0" cellpadding="2">
@@ -443,7 +344,7 @@ function check_form() {
 
       $addresses_query = tep_db_query("select address_book_id, entry_firstname as firstname, entry_lastname as lastname, entry_company as company, entry_street_address as street_address, entry_suburb as suburb, entry_city as city, entry_postcode as postcode, entry_state as state, entry_zone_id as zone_id, entry_country_id as country_id from " . TABLE_ADDRESS_BOOK . " where customers_id = '" . $customer_id . "'");
       while ($addresses = tep_db_fetch_array($addresses_query)) {
-        $format_id = tep_get_address_format_id($address['country_id']);
+        $format_id = tep_get_address_format_id($addresses['country_id']);
 ?>
               <tr>
                 <td><?php echo tep_draw_separator('pixel_trans.gif', '10', '1'); ?></td>
@@ -488,6 +389,8 @@ function check_form() {
 <?php
     }
   }
+
+  if ($addresses_count < MAX_ADDRESS_BOOK_ENTRIES) {
 ?>
       <tr>
         <td><table border="0" width="100%" cellspacing="0" cellpadding="2">
@@ -510,9 +413,7 @@ function check_form() {
                 <td><table border="0" width="100%" cellspacing="0" cellpadding="2">
                   <tr>
                     <td width="10"><?php echo tep_draw_separator('pixel_trans.gif', '10', '1'); ?></td>
-                    <td>
-<?php require(DIR_WS_MODULES . 'checkout_new_address.php'); ?>
-                    </td>
+                    <td><?php require(DIR_WS_MODULES . 'checkout_new_address.php'); ?></td>
                     <td width="10"><?php echo tep_draw_separator('pixel_trans.gif', '10', '1'); ?></td>
                   </tr>
                 </table></td>
@@ -522,6 +423,9 @@ function check_form() {
           </tr>
         </table></td>
       </tr>
+<?php
+  }
+?>
       <tr>
         <td><?php echo tep_draw_separator('pixel_trans.gif', '100%', '10'); ?></td>
       </tr>
